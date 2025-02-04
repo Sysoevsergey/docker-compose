@@ -1,7 +1,8 @@
 services:
   django_app:
-    build: .
     container_name: django_app
+    build:
+      context: .
     ports:
       - "8000:8000"
     restart: always
@@ -11,31 +12,7 @@ services:
     env_file:
       - .env
     volumes:
-      - static:/app/static
-      - nginx_conf:/app/nginx
-    entrypoint: /app/entrypoint.sh
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://127.0.0.1:8000/api/v1/" ]
-      interval: 5s
-      timeout: 10s
-      retries: 5
-    networks:
-      - app_network
-
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: pgadmin
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=example@example.com
-      - PGADMIN_DEFAULT_PASSWORD=password
-    ports:
-      - "5050:80"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: always
-    networks:
-      - app_network
+      - static:/static
 
   postgres:
     image: postgres:latest
@@ -52,31 +29,18 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - app_network
     ports:
       - "5432:5432"
 
   nginx:
-    image: nginx:latest
-    container_name: nginx
+    build: ./nginx
     ports:
-      - "80:80"
+      - "81:80"
     volumes:
-      - static:/app/static
-      - nginx_conf:/etc/nginx/conf.d/
+      - static:/static
     depends_on:
-      django_app:
-        condition: service_healthy
-    restart: always
-    networks:
-      - app_network
+      - django_app
 
 volumes:
   postgres_data:
   static:
-  nginx_conf:
-
-networks:
-  app_network:
-    driver: bridge
